@@ -1,0 +1,25 @@
+#!/bin/bash
+gometalinter --install --update > /dev/null
+gometalinter --vendored-linters \
+    --exclude '^vendor' \
+    --disable-all \
+    --enable maligned \
+    --enable deadcode \
+    --enable dupl --dupl-threshold=100 \
+    --enable errcheck \
+    --enable goconst \
+    --enable gocyclo \
+    --enable gofmt \
+    --enable golint \
+    --enable ineffassign \
+    --enable interfacer \
+    --enable lll --line-length=160 \
+    --enable megacheck \
+    --enable misspell \
+    --enable structcheck \
+    --enable unconvert \
+    --enable unparam \
+    --enable varcheck \
+    --enable vet \
+    --enable vetshadow \
+    command .
