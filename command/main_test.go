@@ -23,7 +23,7 @@ func TestCmdMain(t *testing.T) {
 	assert.Nil(t, command.CmdMain(cli.NewContext(app, set, nil)))
 	assert.Equal(
 		t,
-		"3h0m0s |PROJ-12 |Issue 12\n1h0m0s |PROJ-13 |Issue 13\nTotal: 4h0m0s\n",
+		"3h0m0s PROJ-12 Issue 12\n1h0m0s PROJ-13 Issue 13\nTotal: 4h0m0s\n",
 		writer.String(),
 	)
 }
@@ -60,7 +60,7 @@ func TestCmdMainDateOverride(t *testing.T) {
 	assert.Nil(t, command.CmdMain(cli.NewContext(app, set, nil)))
 	assert.Equal(
 		t,
-		"3h0m0s |PROJ-12 |Issue 12\n1h0m0s |PROJ-13 |Issue 13\nTotal: 4h0m0s\n",
+		"3h0m0s PROJ-12 Issue 12\n1h0m0s PROJ-13 Issue 13\nTotal: 4h0m0s\n",
 		writer.String(),
 	)
 }
@@ -73,7 +73,7 @@ func TestCmdMainRelativeDate(t *testing.T) {
 	assert.Nil(t, command.CmdMain(cli.NewContext(app, set, nil)))
 	assert.Equal(
 		t,
-		"3h0m0s |PROJ-12 |Issue 12\n1h0m0s |PROJ-13 |Issue 13\nTotal: 4h0m0s\n",
+		"3h0m0s PROJ-12 Issue 12\n1h0m0s PROJ-13 Issue 13\nTotal: 4h0m0s\n",
 		writer.String(),
 	)
 }

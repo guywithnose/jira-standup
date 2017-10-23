@@ -53,7 +53,7 @@ func CmdMain(c *cli.Context) error {
 
 	sort.Strings(sortedIssues)
 
-	tabW := tabwriter.NewWriter(c.App.Writer, 0, 0, 1, ' ', tabwriter.Debug)
+	tabW := tabwriter.NewWriter(c.App.Writer, 0, 0, 1, ' ', 0)
 	for _, id := range sortedIssues {
 		fmt.Fprintf(tabW, "%v\t%s\n", durations[id], id)
 		total += durations[id]
