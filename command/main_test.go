@@ -121,6 +121,17 @@ func TestCmdMainSearchError(t *testing.T) {
 	)
 }
 
+func TestCmdMainWorklogError(t *testing.T) {
+	ts := getMockJiraAPIWorklogError(t, time.Now().AddDate(0, 0, -1).Format("2006-01-02"))
+	defer ts.Close()
+	app, _, set := getBaseAppAndFlagSet(ts.URL)
+	assert.EqualError(
+		t,
+		command.CmdMain(cli.NewContext(app, set, nil)),
+		"Unable to get durations: Unable to make worklog call: Request failed. Please analyze the request body for more details. Status code: 500",
+	)
+}
+
 func TestCmdMainInvalidUrl(t *testing.T) {
 	app, _, set := getBaseAppAndFlagSet("::/invalid")
 	assert.EqualError(t, command.CmdMain(cli.NewContext(app, set, nil)), "Unable to get client: parse ::/invalid: missing protocol scheme")
@@ -153,71 +164,57 @@ func getMockJiraAPI(t *testing.T, date string) *httptest.Server {
 			assert.Equal(t, session.Value, "abc")
 			today, err := time.Parse("2006-01-02T15:04:05", fmt.Sprintf("%sT12:00:00", date))
 			assert.Nil(t, err)
+			resp := getSearchResponse(today)
+			bytes, _ := json.Marshal(resp)
+			_, err = w.Write(bytes)
+			assert.Nil(t, err)
+			return
+		}
+
+		if r.URL.String() == "/rest/api/2/issue/PROJ-12/worklog" {
+			session, err := r.Cookie("JSESSIONID")
+			assert.Nil(t, err)
+			assert.Equal(t, session.Value, "abc")
+			today, err := time.Parse("2006-01-02T15:04:05", fmt.Sprintf("%sT12:00:00", date))
+			assert.Nil(t, err)
 			yesterday := today.Add(-time.Hour * 24)
 			tomorrow := today.Add(time.Hour * 24)
-			resp := map[string][]interface{}{
-				"issues": {
-					map[string]interface{}{
-						"key": "PROJ-12",
-						"fields": map[string]interface{}{
-							"summary": "Issue 12",
-							"worklog": map[string]interface{}{
-								"worklogs": []map[string]interface{}{
-									{
-										"author": map[string]string{
-											"name": "un",
-										},
-										"created":          today.Format("2006-01-02T15:04:05.999-0700"),
-										"timeSpentSeconds": 7200,
-									},
-									{
-										"author": map[string]string{
-											"name": "un",
-										},
-										"created":          today.Format("2006-01-02T15:04:05.999-0700"),
-										"timeSpentSeconds": 3600,
-									},
-									{
-										"author": map[string]string{
-											"name": "un2",
-										},
-										"created":          today.Format("2006-01-02T15:04:05.999-0700"),
-										"timeSpentSeconds": 3600,
-									},
-									{
-										"author": map[string]string{
-											"name": "un",
-										},
-										"created":          yesterday.Format("2006-01-02T15:04:05.999-0700"),
-										"timeSpentSeconds": 7200,
-									},
-									{
-										"author": map[string]string{
-											"name": "un",
-										},
-										"created":          tomorrow.Format("2006-01-02T15:04:05.999-0700"),
-										"timeSpentSeconds": 7200,
-									},
-								},
-							},
+			resp := map[string]interface{}{
+				"worklogs": []map[string]interface{}{
+					{
+						"author": map[string]string{
+							"name": "un",
 						},
+						"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+						"timeSpentSeconds": 7200,
 					},
-					map[string]interface{}{
-						"key": "PROJ-13",
-						"fields": map[string]interface{}{
-							"summary": "Issue 13",
-							"worklog": map[string]interface{}{
-								"worklogs": []map[string]interface{}{
-									{
-										"author": map[string]string{
-											"name": "un",
-										},
-										"created":          today.Format("2006-01-02T15:04:05.999-0700"),
-										"timeSpentSeconds": 3600,
-									},
-								},
-							},
+					{
+						"author": map[string]string{
+							"name": "un",
 						},
+						"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+						"timeSpentSeconds": 3600,
+					},
+					{
+						"author": map[string]string{
+							"name": "un2",
+						},
+						"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+						"timeSpentSeconds": 3600,
+					},
+					{
+						"author": map[string]string{
+							"name": "un",
+						},
+						"created":          yesterday.Format("2006-01-02T15:04:05.999-0700"),
+						"timeSpentSeconds": 7200,
+					},
+					{
+						"author": map[string]string{
+							"name": "un",
+						},
+						"created":          tomorrow.Format("2006-01-02T15:04:05.999-0700"),
+						"timeSpentSeconds": 7200,
 					},
 				},
 			}
@@ -274,6 +271,82 @@ func getMockJiraAPISearchError(t *testing.T, date string) *httptest.Server {
 
 		panic(r.URL.String())
 	}))
+}
+
+func getMockJiraAPIWorklogError(t *testing.T, date string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := ioutil.ReadAll(r.Body)
+		assert.Nil(t, err)
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+
+		if r.URL.String() == "/rest/auth/1/session" {
+			auth := map[string]string{}
+			err = json.NewDecoder(r.Body).Decode(&auth)
+			assert.Nil(t, err)
+			assert.Equal(t, "un", auth["username"])
+			assert.Equal(t, "pw", auth["password"])
+			http.SetCookie(w, &http.Cookie{Name: "JSESSIONID", Value: "abc"})
+			_, err = w.Write([]byte("{}"))
+			assert.Nil(t, err)
+			return
+		}
+
+		if r.URL.String() == fmt.Sprintf(
+			"/rest/api/2/search?jql=worklogDate+%%3D+%%27%s%%27+and+worklogAuthor+%%3D+un&startAt=0&maxResults=50&expand=&fields=*all",
+			date,
+		) {
+			session, err := r.Cookie("JSESSIONID")
+			assert.Nil(t, err)
+			assert.Equal(t, session.Value, "abc")
+			today, err := time.Parse("2006-01-02T15:04:05", fmt.Sprintf("%sT12:00:00", date))
+			assert.Nil(t, err)
+			resp := getSearchResponse(today)
+			bytes, _ := json.Marshal(resp)
+			_, err = w.Write(bytes)
+			assert.Nil(t, err)
+			return
+		}
+
+		if r.URL.String() == "/rest/api/2/issue/PROJ-12/worklog" {
+			w.WriteHeader(500)
+			return
+		}
+
+		panic(r.URL.String())
+	}))
+}
+
+func getSearchResponse(today time.Time) map[string][]interface{} {
+	return map[string][]interface{}{
+		"issues": {
+			map[string]interface{}{
+				"key": "PROJ-12",
+				"fields": map[string]interface{}{
+					"summary": "Issue 12",
+					"worklog": map[string]interface{}{
+						"total": 5,
+					},
+				},
+			},
+			map[string]interface{}{
+				"key": "PROJ-13",
+				"fields": map[string]interface{}{
+					"summary": "Issue 13",
+					"worklog": map[string]interface{}{
+						"worklogs": []map[string]interface{}{
+							{
+								"author": map[string]string{
+									"name": "un",
+								},
+								"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+								"timeSpentSeconds": 3600,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func getBaseAppAndFlagSet(mockAPIURL string) (*cli.App, *bytes.Buffer, *flag.FlagSet) {

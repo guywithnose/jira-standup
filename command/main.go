@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 	"text/tabwriter"
@@ -32,8 +33,7 @@ func CmdMain(c *cli.Context) error {
 		return cli.NewExitError("You must specify --url", 1)
 	}
 
-	dateParam := c.Args().Get(0)
-	date, err := handleDate(dateParam)
+	date, err := handleDate(c.Args().Get(0))
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,10 @@ func CmdMain(c *cli.Context) error {
 		return fmt.Errorf("Unable to get client: %v", err)
 	}
 
+	return printDurations(client, username, date, c.App.Writer)
+}
+
+func printDurations(client *jira.Client, username string, date time.Time, writer io.Writer) error {
 	durations, err := getDurations(client, username, date)
 	if err != nil {
 		return fmt.Errorf("Unable to get durations: %v", err)
@@ -56,7 +60,7 @@ func CmdMain(c *cli.Context) error {
 
 	sort.Strings(sortedIssues)
 
-	tabW := tabwriter.NewWriter(c.App.Writer, 0, 0, 1, ' ', 0)
+	tabW := tabwriter.NewWriter(writer, 0, 0, 1, ' ', 0)
 	for _, id := range sortedIssues {
 		fmt.Fprintf(tabW, "%v\t%s\n", durations[id], id)
 		total += durations[id]
@@ -64,7 +68,7 @@ func CmdMain(c *cli.Context) error {
 
 	_ = tabW.Flush()
 
-	fmt.Fprintf(c.App.Writer, "Total: %v\n", total)
+	fmt.Fprintf(writer, "Total: %v\n", total)
 	return nil
 }
 
@@ -109,16 +113,28 @@ func getDurations(client *jira.Client, username string, date time.Time) (map[str
 		return nil, fmt.Errorf("Unable to make search call: %v", err)
 	}
 
-	return parseDurations(issues, username, date)
+	return parseDurations(client, issues, username, date)
 }
 
-func parseDurations(issues []jira.Issue, username string, date time.Time) (map[string]time.Duration, error) {
+func parseDurations(client *jira.Client, issues []jira.Issue, username string, date time.Time) (map[string]time.Duration, error) {
 	durations := map[string]time.Duration{}
 	for _, issue := range issues {
 		issueKey := fmt.Sprintf("%s\t%s", issue.Key, issue.Fields.Summary)
 		durations[issueKey] = time.Duration(0)
-		if issue.Fields != nil && issue.Fields.Worklog != nil && issue.Fields.Worklog.Worklogs != nil {
-			for _, wl := range issue.Fields.Worklog.Worklogs {
+		if issue.Fields != nil && issue.Fields.Worklog != nil {
+			var worklogs []jira.WorklogRecord
+			if issue.Fields.Worklog.MaxResults != issue.Fields.Worklog.Total {
+				worklog, _, err := client.Issue.GetWorklogs(issue.Key)
+				if err != nil {
+					return nil, fmt.Errorf("Unable to make worklog call: %v", err)
+				}
+
+				worklogs = worklog.Worklogs
+			} else {
+				worklogs = issue.Fields.Worklog.Worklogs
+			}
+
+			for _, wl := range worklogs {
 				if wl.Author.Name == username && time.Time(wl.Created).After(date) && time.Time(wl.Created).Before(date.Add(24*time.Hour)) {
 					duration, _ := time.ParseDuration(fmt.Sprintf("%ds", wl.TimeSpentSeconds))
 					durations[issueKey] += duration
