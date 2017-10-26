@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-// CmdMain does something
+// CmdMain summarizes the tickets the user has recently tracked time against
 func CmdMain(c *cli.Context) error {
 	username := c.String("username")
 	if username == "" {

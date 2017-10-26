@@ -15,7 +15,7 @@ func main() {
 	app.Version = fmt.Sprintf("%s-%s", command.Version, runtime.Version())
 	app.Author = "Robert Bittle"
 	app.Email = "guywithnose@gmail.com"
-	app.Usage = "jira-standup"
+	app.Usage = "Summarize the tickets that you have recently tracked time against"
 	app.Action = command.CmdMain
 
 	app.CommandNotFound = func(c *cli.Context, command string) {
