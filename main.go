@@ -42,7 +42,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "date",
-			Usage: "The date to check",
+			Usage: "The date to check (Format: 2017-10-25)",
 		},
 		cli.IntFlag{
 			Name:  "relativeDate",
