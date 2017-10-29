@@ -56,7 +56,7 @@ func TestCmdMainDateOverride(t *testing.T) {
 	ts := getMockJiraAPI(t, "2016-03-25")
 	defer ts.Close()
 	app, writer, set := getBaseAppAndFlagSet(ts.URL)
-	set.String("date", "2016-03-25", "doc")
+	assert.Nil(t, set.Parse([]string{"2016-03-25"}))
 	assert.Nil(t, command.CmdMain(cli.NewContext(app, set, nil)))
 	assert.Equal(
 		t,
@@ -65,11 +65,31 @@ func TestCmdMainDateOverride(t *testing.T) {
 	)
 }
 
+func TestCmdMainInvalidDate(t *testing.T) {
+	app, _, set := getBaseAppAndFlagSet("foo")
+	assert.Nil(t, set.Parse([]string{"2016-23-25"}))
+	assert.EqualError(
+		t,
+		command.CmdMain(cli.NewContext(app, set, nil)),
+		"parsing time \"2016-23-25\": month out of range",
+	)
+}
+
+func TestCmdMainUsage(t *testing.T) {
+	app, _, set := getBaseAppAndFlagSet("foo")
+	assert.Nil(t, set.Parse([]string{"1", "2"}))
+	assert.EqualError(
+		t,
+		command.CmdMain(cli.NewContext(app, set, nil)),
+		"Usage \"jira-standup {date}\"",
+	)
+}
+
 func TestCmdMainRelativeDate(t *testing.T) {
 	ts := getMockJiraAPI(t, time.Now().Add(-time.Hour*24*20).Format("2006-01-02"))
 	defer ts.Close()
 	app, writer, set := getBaseAppAndFlagSet(ts.URL)
-	set.String("relativeDate", "20", "doc")
+	assert.Nil(t, set.Parse([]string{"20"}))
 	assert.Nil(t, command.CmdMain(cli.NewContext(app, set, nil)))
 	assert.Equal(
 		t,
@@ -104,15 +124,6 @@ func TestCmdMainSearchError(t *testing.T) {
 func TestCmdMainInvalidUrl(t *testing.T) {
 	app, _, set := getBaseAppAndFlagSet("::/invalid")
 	assert.EqualError(t, command.CmdMain(cli.NewContext(app, set, nil)), "Unable to get client: parse ::/invalid: missing protocol scheme")
-}
-
-func TestCmdMainDateAndRelativeDate(t *testing.T) {
-	ts := getMockJiraAPI(t, time.Now().Add(-time.Hour*24*20).Format("2006-01-02"))
-	defer ts.Close()
-	app, _, set := getBaseAppAndFlagSet(ts.URL)
-	set.String("date", "2016-03-25", "doc")
-	set.String("relativeDate", "20", "doc")
-	assert.EqualError(t, command.CmdMain(cli.NewContext(app, set, nil)), "Error: Cannot specify date and relative date")
 }
 
 func getMockJiraAPI(t *testing.T, date string) *httptest.Server {

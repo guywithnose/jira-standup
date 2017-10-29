@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"text/tabwriter"
 	"time"
 
@@ -12,6 +13,10 @@ import (
 
 // CmdMain summarizes the tickets the user has recently tracked time against
 func CmdMain(c *cli.Context) error {
+	if c.NArg() != 1 && c.NArg() != 0 {
+		return cli.NewExitError("Usage \"jira-standup {date}\"", 1)
+	}
+
 	username := c.String("username")
 	if username == "" {
 		return cli.NewExitError("You must specify --username", 1)
@@ -27,10 +32,8 @@ func CmdMain(c *cli.Context) error {
 		return cli.NewExitError("You must specify --url", 1)
 	}
 
-	dateString := c.String("date")
-	relativeDate := c.Int("relativeDate")
-
-	date, err := handleDate(dateString, relativeDate)
+	dateParam := c.Args().Get(0)
+	date, err := handleDate(dateParam)
 	if err != nil {
 		return err
 	}
@@ -79,20 +82,17 @@ func getClient(url, username, password string) (*jira.Client, error) {
 	return client, nil
 }
 
-func handleDate(dateString string, relativeDate int) (time.Time, error) {
-	if relativeDate != 0 {
-		if dateString != "" {
-			return time.Time{}, cli.NewExitError("Error: Cannot specify date and relative date", 1)
-		}
-
-		dateString = time.Now().AddDate(0, 0, -relativeDate).Format("2006-01-02")
+func handleDate(dateParam string) (time.Time, error) {
+	relativeDate, err := strconv.Atoi(dateParam)
+	if err == nil {
+		dateParam = time.Now().AddDate(0, 0, -relativeDate).Format("2006-01-02")
 	}
 
-	if dateString == "" {
-		dateString = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	if dateParam == "" {
+		dateParam = time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 	}
 
-	return time.Parse("2006-01-02", dateString)
+	return time.Parse("2006-01-02", dateParam)
 }
 
 func getDurations(client *jira.Client, username string, date time.Time) (map[string]time.Duration, error) {

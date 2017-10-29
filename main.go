@@ -40,14 +40,6 @@ func main() {
 			Usage:  "The jira password for auth",
 			EnvVar: "JIRA_PASSWORD",
 		},
-		cli.StringFlag{
-			Name:  "date",
-			Usage: "The date to check (Format: 2017-10-25)",
-		},
-		cli.IntFlag{
-			Name:  "relativeDate",
-			Usage: "Check date that was this many days ago",
-		},
 	}
 
 	err := app.Run(os.Args)
