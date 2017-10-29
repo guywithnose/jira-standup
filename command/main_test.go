@@ -17,7 +17,7 @@ import (
 )
 
 func TestCmdMain(t *testing.T) {
-	ts := getMockJiraAPI(t, time.Now().Format("2006-01-02"))
+	ts := getMockJiraAPI(t, time.Now().AddDate(0, 0, -1).Format("2006-01-02"))
 	defer ts.Close()
 	app, writer, set := getBaseAppAndFlagSet(ts.URL)
 	assert.Nil(t, command.CmdMain(cli.NewContext(app, set, nil)))
@@ -91,7 +91,7 @@ func TestCmdMainAuthError(t *testing.T) {
 }
 
 func TestCmdMainSearchError(t *testing.T) {
-	ts := getMockJiraAPISearchError(t, time.Now().Format("2006-01-02"))
+	ts := getMockJiraAPISearchError(t, time.Now().AddDate(0, 0, -1).Format("2006-01-02"))
 	defer ts.Close()
 	app, _, set := getBaseAppAndFlagSet(ts.URL)
 	assert.EqualError(
