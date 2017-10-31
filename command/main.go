@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/andygrunwald/go-jira"
+	"github.com/fatih/color"
 	"github.com/urfave/cli"
 )
 
@@ -60,9 +61,10 @@ func printDurations(client *jira.Client, username string, date time.Time, writer
 
 	sort.Strings(sortedIssues)
 
+	green := color.New(color.FgGreen).SprintFunc()
 	tabW := tabwriter.NewWriter(writer, 0, 0, 1, ' ', 0)
 	for _, id := range sortedIssues {
-		fmt.Fprintf(tabW, "%v\t%s\n", durations[id], id)
+		fmt.Fprintf(tabW, "%v\t%s\n", green(durations[id]), id)
 		total += durations[id]
 	}
 
@@ -119,7 +121,8 @@ func getDurations(client *jira.Client, username string, date time.Time) (map[str
 func parseDurations(client *jira.Client, issues []jira.Issue, username string, date time.Time) (map[string]time.Duration, error) {
 	durations := map[string]time.Duration{}
 	for _, issue := range issues {
-		issueKey := fmt.Sprintf("%s\t%s", issue.Key, issue.Fields.Summary)
+		blue := color.New(color.FgBlue).SprintFunc()
+		issueKey := fmt.Sprintf("%s\t%s", blue(issue.Key), issue.Fields.Summary)
 		durations[issueKey] = time.Duration(0)
 		if issue.Fields != nil && issue.Fields.Worklog != nil {
 			var worklogs []jira.WorklogRecord
