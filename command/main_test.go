@@ -185,35 +185,35 @@ func getMockJiraAPI(t *testing.T, date string) *httptest.Server {
 						"author": map[string]string{
 							"name": "un",
 						},
-						"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+						"started":          today.Format("2006-01-02T15:04:05.999-0700"),
 						"timeSpentSeconds": 7200,
 					},
 					{
 						"author": map[string]string{
 							"name": "un",
 						},
-						"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+						"started":          today.Format("2006-01-02T15:04:05.999-0700"),
 						"timeSpentSeconds": 3600,
 					},
 					{
 						"author": map[string]string{
 							"name": "un2",
 						},
-						"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+						"started":          today.Format("2006-01-02T15:04:05.999-0700"),
 						"timeSpentSeconds": 3600,
 					},
 					{
 						"author": map[string]string{
 							"name": "un",
 						},
-						"created":          yesterday.Format("2006-01-02T15:04:05.999-0700"),
+						"started":          yesterday.Format("2006-01-02T15:04:05.999-0700"),
 						"timeSpentSeconds": 7200,
 					},
 					{
 						"author": map[string]string{
 							"name": "un",
 						},
-						"created":          tomorrow.Format("2006-01-02T15:04:05.999-0700"),
+						"started":          tomorrow.Format("2006-01-02T15:04:05.999-0700"),
 						"timeSpentSeconds": 7200,
 					},
 				},
@@ -338,7 +338,7 @@ func getSearchResponse(today time.Time) map[string][]interface{} {
 								"author": map[string]string{
 									"name": "un",
 								},
-								"created":          today.Format("2006-01-02T15:04:05.999-0700"),
+								"started":          today.Format("2006-01-02T15:04:05.999-0700"),
 								"timeSpentSeconds": 3600,
 							},
 						},

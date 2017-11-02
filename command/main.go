@@ -138,7 +138,7 @@ func parseDurations(client *jira.Client, issues []jira.Issue, username string, d
 			}
 
 			for _, wl := range worklogs {
-				if wl.Author.Name == username && time.Time(wl.Created).After(date) && time.Time(wl.Created).Before(date.Add(24*time.Hour)) {
+				if wl.Author.Name == username && time.Time(wl.Started).After(date) && time.Time(wl.Started).Before(date.Add(24*time.Hour)) {
 					duration, _ := time.ParseDuration(fmt.Sprintf("%ds", wl.TimeSpentSeconds))
 					durations[issueKey] += duration
 				}
